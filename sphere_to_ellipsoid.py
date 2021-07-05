@@ -36,17 +36,21 @@ def get_ellipsoid_surface_points(a,b,c):
     return r_x, r_y, r_z
 
 
-def get_affine_transform_matrix(a1,a2,a3, b1,b2,b3, x, y):
-    """ y = Ax + b find matrix A
-    a1,a2,a3 b1,b2,b3 are orthogonal vectors and x, and y are coordinates in frames 1, 2
+def get_affine_transform_matrix(basis1, basis2, x1, x2):
+    """ x2 = Ax1 + b find matrix A
+    a1,a2,a3 = basis_1
+    b1,b2,b3 = basis_2
+    a1,a2,a3 b1,b2,b3 are orthogonal vectors and x1, and x2 are coordinates in frames 1, 2
 
     W = AV + B
     """
-    V = np.column_stack((a1,a2,a3))
-    W = np.column_stack((b1,b2,b3))
+    a1, a2, a3 = basis1
+    b1, b2, b3 = basis2
+    V = np.column_stack((a1, a2, a3))
+    W = np.column_stack((b1, b2, b3))
     A = W.dot(scipy.linalg.inv(V))
 
-    b = y - A.dot(x)
+    b = x2 - A.dot(x1)
     return A, b
 
 
@@ -79,16 +83,16 @@ if __name__ == "__main__":
     x1 = np.zeros((3)) # (x,y,z) origin in coord system 2 (ellipsoid)
 
     # Initialise with points on surface of sphere
-    r_x,r_y,r_z = get_ellipsoid_surface_points(a,b,c)
+    r_x, r_y, r_z = get_ellipsoid_surface_points(a,b,c)
     sphere_positions = np.column_stack((r_x, r_y, r_z))
 
     # axes of sphere
-    p1, p2, p3 = np.array([a, 0, 0]).T, np.array([0, b, 0]).T, np.array([0, 0, c]).T
+    vectors_sphere = np.array([a, 0, 0]).T, np.array([0, b, 0]).T, np.array([0, 0, c]).T
     # axes of ellipsoid
-    h1,h2,h3 = p1*(a_final/a), p2*(b_final/b), p3*(c_final/c)
+    vectors_ellipsoid = vectors_sphere[0]*(a_final/a), vectors_sphere[1]*(b_final/b), vectors_sphere[2]*(c_final/c)
 
     # Perform coordinate transform onto ellipsoid surface
-    A, b = get_affine_transform_matrix(h1, h2, h3, p1, p2, p3, x0, x1)
+    A, b = get_affine_transform_matrix(vectors_sphere, vectors_ellipsoid, x0, x1)
     ellipsoid_positions = np.array([perform_affine_transfrom(coord, A, b) for coord in sphere_positions])
 
     # plot
